@@ -43,6 +43,8 @@ class PinjamController extends Controller
 
     public function store(Request $request)
     {
+        // Http::get("http://localhost:8002/api/pinjam/cek-pengembalian-otomatis");
+
         $token = $request->bearerToken();
 
         if (!$token) {
@@ -68,6 +70,11 @@ class PinjamController extends Controller
         if (!$buku || isset($buku['message'])) {
             return response()->json(['message' => 'Buku tidak ditemukan'], 404);
         }
+
+        if ($buku['stok'] <= 0) {
+            return response()->json(['message' => 'Stok buku habis'], 400);
+        }
+
         $user = $userResponse->json();
         $pinjam = PinjamModel::create([
             'user_id' => $user['user_id'],
@@ -77,6 +84,9 @@ class PinjamController extends Controller
             'tangga_kembali' => $request->tangga_kembali,
             'status' => 'dipinjam'
         ]);
+
+        Http::put("http://localhost:8001/api/buku/kurangi-stok/{$request->buku_id}");
+
 
         return response()->json($pinjam, 201);
     }
@@ -93,6 +103,25 @@ class PinjamController extends Controller
     {
         PinjamModel::destroy($id);
         return response()->json(['message' => 'Data pinjam dihapus']);
+    }
+
+    public function cekPengembalianOtomatis()
+    {
+        $today = now()->toDateString();
+        $pinjams = PinjamModel::where('status', 'dipinjam')
+            ->whereDate('tangga_kembali', '<', $today)
+            ->get();
+
+        foreach ($pinjams as $pinjam) {
+            // Update status ke "selesai"
+            $pinjam->status = 'selesai';
+            $pinjam->save();
+
+            // Kembalikan stok buku via buku-service
+            Http::put("http://localhost:8001/api/buku/tambah-stok/{$pinjam->buku_id}");
+        }
+
+        return response()->json(['message' => 'Proses pengembalian otomatis selesai', 'total' => $pinjams->count()]);
     }
 
 }

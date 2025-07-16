@@ -96,4 +96,38 @@ class BukuController extends Controller
         return response()->json($result);
     }
 
+    public function kurangiStok($id)
+    {
+        $buku = BukuModel::find($id);
+
+        if (!$buku || $buku->stok < 1) {
+            return response()->json(['message' => 'Stok tidak cukup atau buku tidak ditemukan'], 400);
+        }
+
+        $buku->stok -= 1;
+        $buku->save();
+
+        return response()->json([
+            'message' => 'Stok berhasil dikurangi',
+            'stok_sekarang' => $buku->stok
+        ]);
+    }
+
+    public function tambahStok($id)
+    {
+        $buku = BukuModel::find($id);
+
+        if (!$buku) {
+            return response()->json(['message' => 'Buku tidak ditemukan'], 404);
+        }
+
+        $buku->stok += 1;
+        $buku->save();
+
+        return response()->json([
+            'message' => 'Stok berhasil dikembalikan',
+            'stok_sekarang' => $buku->stok
+        ]);
+    }
+
 }

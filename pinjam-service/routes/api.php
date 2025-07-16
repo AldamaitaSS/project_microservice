@@ -21,6 +21,7 @@ use App\Http\Controllers\DashboardController;
 // });
 Route::middleware('api')->group(function () {
     Route::get('/pinjam', [PinjamController::class, 'index']);
+    Route::get('/pinjam/cek-kembali-otomatis', [PinjamController::class, 'cekPengembalianOtomatis']);
     Route::get('/pinjam/{id}', [PinjamController::class, 'show']);
     Route::post('/pinjam', [PinjamController::class, 'store']);
     Route::put('/pinjam/{id}', [PinjamController::class, 'update']);
